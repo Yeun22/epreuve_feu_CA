@@ -1,5 +1,26 @@
 <?php
 
+
+function isInteger($arg) 
+{
+	if(is_numeric($arg) && intval($arg)-$arg ===0)
+	{
+		return true;
+	}
+}
+
+if(empty($argv[1]) || empty($argv[2]) )
+{
+        echo "Il doit y avoir deux paramètres \n";
+        return;
+}
+
+if(!isInteger($argv[1]) || !isInteger($argv[2]) )
+{
+	echo "Les deux paramètres doivent être des entiers \n";
+	return;
+}
+
 $x = $argv[1];
 $y = $argv[2];
 
@@ -34,3 +55,4 @@ if ($y >= 2) {
     }
 }
 echo "\n";
+
