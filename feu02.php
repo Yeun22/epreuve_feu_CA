@@ -1,28 +1,199 @@
 <?php
 
-$tofind = file($argv[1]);
 
-$board =file($argv[2]);
-
-
-for($i=0;$i<count($tofind);$i++)
-{
-	$findme = $tofind[$i];
-	for($j=0;$j<count($board);$j++){
-		$mystring = $board[$j];
-
-		$pos = strpos($mystring, $findme);
-
-		// Notez notre utilisation de !==.  != ne fonctionnerait pas comme attendu
-		// car la position de 'a' est la 0-ième (premier) caractère.
-		if ($pos !== false) {
-    			echo "La chaine '$findme' a été trouvée dans la chaîne '$mystring'";
-    			echo " et débute à la position $pos";
-		} else {
-    			echo "La chaîne '$findme' ne se trouve pas dans la chaîne '$mystring'";
-		}
-	}
+if (count($argv) !== 3) {
+    echo "Il foit y avoir deux paramètres dans ce script \n";
+    return;
 }
 
 
-var_dump($tofind); var_dump($board);
+if(file_exists($argv[1]) && file_exists($argv[2])){
+$arrToFind = file($argv[1]);
+$arrBoard = file($argv[2]);
+}else{
+    echo "Les fichiers passés en paramètres ne sont pas bon \n";
+    return;
+}
+
+if (!is_array($arrToFind) || !is_array($arrBoard)) {
+    echo "Les fichiers passés en paramètres ne sont pas bon \n";
+    return;
+}
+
+
+function findArrayInOtherOne($arrBoard, $arrToFind)
+{
+
+    $counterBoard = 0;
+    $counterFind = 0;
+    $line = count($arrBoard);
+    do {
+        $mystring = $arrBoard[$counterBoard];
+        $findme = $arrToFind[$counterFind];
+
+        $pos = findStringInOtherOne($mystring, $findme);
+        //Premier cas le + simple : Pas dedans : 
+        if ($pos === "notfind") {
+            $counterFind = 0;
+        } else {
+            do {
+                if ($counterBoard < $line) {
+                    $line = $counterBoard;
+                }
+                $counterFind++;
+                $counterBoard++;
+                $mystring = $arrBoard[$counterBoard];
+                $findme = $arrToFind[$counterFind];
+                $newPos = findStringInOtherOne($mystring, $findme, $pos);
+                if ($pos == $newPos) {
+                    if (!isset($arrToFind[$counterFind + 1])) {
+                        //Alors on vérifie qu'on a trouvé la string complète !
+                        $posFixe = $pos;
+                        $isFind = true;
+                        $s = $counterBoard;
+                        $find = (count($arrToFind) - 1);
+                        do {
+                            $lastPos = findStringInOtherOne($arrBoard[$s], $arrToFind[$find], $posFixe);
+                            $pos = findStringInOtherOne($arrBoard[$s], $arrToFind[$find], $posFixe);
+                            if ($lastPos !== $pos) {
+                                $isFind = false;
+                            }
+                            $find--;
+                            $s--;
+                        } while ($find >= 0);
+
+                        if ($isFind) {
+                            $lineFinale = $counterBoard - $counterFind;
+                            return [$newPos, $lineFinale];
+                        }
+                    } elseif (!isset($arrBoard[$counterBoard + 1])) {
+                        return "notfind";
+                    }
+                } elseif ($newPos !== $pos && $newPos !== 'notfind') {
+                    //On doit péter le while et reprendre avec 
+                    $counterBoard = $line;
+                    $counterFind = 0;
+                    $pos = $newPos;
+                }
+            } while ($newPos !== "notfind" && $counterBoard < count($arrBoard));
+        }
+        $counterFind = 0;
+        $counterBoard++;
+    } while ($counterBoard < 3);
+    return "Forme introuvable";
+}
+
+
+
+function findStringInOtherOne($searchString, $findString, $pos = 0)
+{
+    $i = $pos;
+    $j = 0;
+    do {
+        if ($findString[$j] === $searchString[$i]) {
+            if (isset($findString[$j + 1]) && isset($searchString[$i + 1])) {
+                $i++;
+                $j++;
+            } else {
+                if (!isset($findString[$j + 1])) {
+                    //Alors on vérifie qu'on a trouvé la string complète !
+                    $isFind = true;
+                    $s = $i;
+                    $find = (strlen($findString) - 1);
+                    do {
+                        if ($searchString[$s] !== $findString[$find] && $findString[$find] !== " ") {
+                            $isFind = false;
+                        }
+                        $s--;
+                        $find--;
+                    } while ($find >= 0);
+
+                    if ($isFind) {
+                        $pos = $i - (strlen($findString) - 1);
+                        return $pos;
+                    }
+                } elseif (!isset($searchString[$i + 1])) {
+                    return "notfind";
+                }
+            }
+        } elseif ($findString[$j] === ' ') {
+            if (isset($findString[$j + 1]) && isset($searchString[$i + 1])) {
+                $i++;
+                $j++;
+            }
+        } else {
+            if (!isset($searchString[$i + 1])) {
+                return "notfind";
+            }
+            $i++;
+        }
+    } while ($i < strlen($searchString));
+}
+
+
+function renderForme($arrayToFilter, $arrayToKeep, $posStart, $lineStart)
+{
+
+
+    $countArrayToKeep = count($arrayToKeep);
+    $countArrayToFilter = count($arrayToFilter);
+    $y = 0;
+    //Si y'a des espâces on les remplaces pa '-'
+
+
+    for ($i = 0; $i < $countArrayToFilter; $i++) {
+        if ($i < $lineStart || $i >= $lineStart + $countArrayToKeep) {
+            for ($l = 0; $l < strlen($arrayToFilter[$i]); $l++) {
+                echo '-';
+            }
+        } else {
+            $letter = 0;
+            for ($l = 0; $l < $posStart; $l++) {
+                echo '-';
+            }
+            for ($l = $posStart; $l < strlen($arrayToKeep[$y]) + ($posStart); $l++) {
+                if ($arrayToKeep[$y][$letter] === ' ') {
+                    echo  '-';
+                } else {
+                    echo $arrayToKeep[$y][$letter];
+                }
+                if (isset($arrayToKeep[$letter + 1])) {
+                    $letter++;
+                }
+            }
+            for ($l = strlen($arrayToKeep[$y]) + $posStart; $l < strlen($arrayToFilter[$i]); $l++) {
+                echo "-";
+            }
+            if (isset($arrayToKeep[$y + 1])) {
+                $y++;
+            }
+        }
+        echo "\n";
+    }
+}
+
+echo "Le Traitement : \n";
+
+for ($i = 0; $i < count($arrToFind); $i++) {
+    $arrToFind[$i] = substr($arrToFind[$i], 0, strlen($arrToFind[$i]) - 1);
+}
+for ($i = 0; $i < count($arrBoard); $i++) {
+    $arrBoard[$i] = substr($arrBoard[$i], 0, strlen($arrBoard[$i]) - 1);
+}
+
+$result =  findArrayInOtherOne($arrBoard, $arrToFind);
+
+if (is_array($result) && $result[0] !== 'notfind' ) {
+    $position = $result[0];
+    $line = $result[1];
+    echo "\n Line = $line et position = $position \n";
+    renderForme($arrBoard, $arrToFind, $position, $line);
+} else {
+    if (is_array($result)) {
+        echo "Forme introuvable \n";
+    } else {
+        echo $result . "\n";
+    }
+    return;
+}
+
