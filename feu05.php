@@ -255,3 +255,5 @@ renderArrayInNav($labyrinthe);
 echo "\n Ma solution : \n";
 resolveLabyrinthe($labyrinthe, $start, $charsOfEnd, $charsToRendPath);
 
+//TEST
+echo "Test pour correction \n";
